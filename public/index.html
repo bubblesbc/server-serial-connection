@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Temperature Monitor</title>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            text-align: center;
+            padding: 50px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        #gauge_div {
+            margin: 0 auto;
+            width: 400px;
+            height: 400px;
+        }
+
+        #warning {
+            font-size: 1.5em;
+            margin-top: 20px;
+            color: red;
+            display: none; /* Hidden by default */
+        }
+    </style>
+    <script type="text/javascript">
+        google.charts.load('current', {
+            packages: ['gauge']
+        });
+
+        google.charts.setOnLoadCallback(drawGauge);
+
+        let gaugeOptions = {
+            min: 0,
+            max: 35,
+            yellowFrom: 28,
+            yellowTo: 30,
+            redFrom: 30,
+            redTo: 35,
+            minorTicks: 5
+        };
+
+        let gauge;
+
+        function drawGauge() {
+            gauge = new google.visualization.Gauge(document.getElementById('gauge_div'));
+            gauge.draw(getData(0), gaugeOptions);
+        }
+
+        function getData(temperature) {
+            return google.visualization.arrayToDataTable([
+                ['Label', 'Value'],
+                ['Temp', temperature]
+            ]);
+        }
+
+        function updateGauge(temperature) {
+            gauge.draw(getData(temperature), gaugeOptions);
+            updateWarning(temperature);
+        }
+
+        function updateWarning(temperature) {
+            const warningDiv = document.getElementById('warning');
+            if (temperature >= 30) {
+                warningDiv.style.display = 'block';
+                warningDiv.textContent = `Perigo: Alta Temperatura! (${temperature} °C)`;
+            } else {
+                warningDiv.style.display = 'none';
+            }
+        }
+
+        // Websocket para receber dados de temperatura
+        const socket = new WebSocket(`ws://${window.location.host}`);
+
+        socket.addEventListener('message', function (event) {
+            const temp = parseFloat(event.data);
+            updateGauge(temp);
+        });
+
+        socket.addEventListener('error', function (event) {
+            console.error('WebSocket error:', event);
+        });
+    </script>
+</head>
+<body>
+    <h1>Leitor de Temperatura DHT11</h1>
+    <div id="gauge_div"></div>
+    <div id="warning"></div>
+</body>
+</html>
